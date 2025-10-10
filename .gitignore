@@ -1,0 +1,65 @@
+# ===========================
+# 👷 ARCHIVO .gitignore
+# ===========================
+
+# --- Entornos virtuales ---
+venv/
+env/
+ENV/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# --- Archivos de configuración ---
+*.env
+.env.*
+*.ini
+*.cfg
+*.toml
+*.bak
+
+# --- Django / Base de datos ---
+*.log
+*.pot
+*.pyc
+db.sqlite3
+/staticfiles/
+/media/
+
+# --- Archivos temporales ---
+*.tmp
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.code-workspace
+
+# --- Node / Frontend (si lo integras después) ---
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# --- Docker ---
+*.pid
+*.seed
+*.pid.lock
+
+# --- Compilados o cacheados ---
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+MANIFEST
+
+# --- Python build ---
+*.so
+*.dylib
+*.dll
+*.out
