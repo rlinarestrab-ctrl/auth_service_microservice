@@ -3,19 +3,20 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 from corsheaders.defaults import default_headers
-import dj_database_url  # ✅ para usar DATABASE_URL
+import dj_database_url
 
+# --- 🏗️ Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Cargar .env desde la raíz del microservicio
+# Cargar .env si existe localmente
 load_dotenv(BASE_DIR.parent / ".env")
 
-# --- 🔑 Configuración básica ---
+# --- ⚙️ Configuración base ---
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret")
 DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-# --- 🔧 Apps instaladas ---
+# --- 🧩 Apps instaladas ---
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
 ]
 
+# --- 🧱 Middleware ---
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -37,10 +39,12 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = "auth_service.urls"
 
+# --- 🎨 Templates ---
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -59,59 +63,46 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "auth_service.wsgi.application"
 
-# --- ⚙️ Base de datos (Supabase) ---
+# --- 🗄️ Base de datos (Supabase / Render) ---
 DB_SCHEMA = os.getenv("DB_SCHEMA", "auth_service")
 
-# Si tienes DATABASE_URL (Supabase o Render)
 if os.getenv("DATABASE_URL"):
     DATABASES = {
-        "default": dj_database_url.parse(
-            os.getenv("DATABASE_URL"),
-            conn_max_age=60,
-            ssl_require=True
+        "default": dj_database_url.config(
+            default=os.environ["DATABASE_URL"],
+            conn_max_age=600,
+            ssl_require=True,
         )
     }
     DATABASES["default"]["OPTIONS"] = {
         "options": f"-c search_path={DB_SCHEMA},public"
     }
 else:
-    # Fallback local (si no hay DATABASE_URL)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.environ.get("POSTGRES_DB", "auth_service_db"),
             "USER": os.environ.get("POSTGRES_USER", "postgres"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("POSTGRES_HOST", "db"),
+            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
             "PORT": os.environ.get("POSTGRES_PORT", "5432"),
         }
     }
 
-# --- 🔐 Validadores y seguridad ---
-AUTH_PASSWORD_VALIDATORS = []
-
-LANGUAGE_CODE = "es"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
-
-STATIC_URL = "static/"
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# 🚦 User model
+# --- 🧑‍💻 Usuarios ---
 AUTH_USER_MODEL = "users.Usuario"
 
 # --- 🌐 CORS ---
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "https://tu-frontend.vercel.app",  # cuando desplegues
+    "https://tu-frontend.vercel.app",  # ✅ cambiar cuando deployes
 ]
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization", "x-requested-with", "x-user-id", "user-agent",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# --- 🔒 DRF + JWT ---
+# --- 🔒 JWT + DRF ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -132,6 +123,17 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+# --- 🌍 Internacionalización ---
+LANGUAGE_CODE = "es"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_TZ = True
+
+# --- 🧾 Archivos estáticos ---
+STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- 🔑 Google OAuth ---
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
