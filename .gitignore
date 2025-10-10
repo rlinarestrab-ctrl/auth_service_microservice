@@ -63,3 +63,8 @@ MANIFEST
 *.dylib
 *.dll
 *.out
+
+# Entornos y backups
+.envbk
+.env
+envbk
