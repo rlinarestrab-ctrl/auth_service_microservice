@@ -66,28 +66,19 @@ WSGI_APPLICATION = "auth_service.wsgi.application"
 # --- 🗄️ Base de datos (Supabase / Render) ---
 DB_SCHEMA = os.getenv("DB_SCHEMA", "auth_service")
 
-if os.getenv("DATABASE_URL"):
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=os.environ["DATABASE_URL"],
-            conn_max_age=600,
-            ssl_require=True,
-        )
-    }
-    DATABASES["default"]["OPTIONS"] = {
-        "options": f"-c search_path={DB_SCHEMA},public"
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("POSTGRES_DB", "auth_service_db"),
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-        }
-    }
+
+DATABASES = {
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True,
+    )
+}
+
+# 🔧 Configurar el esquema automáticamente (auth_service, etc.)
+DATABASES["default"]["OPTIONS"] = {
+    "options": f"-c search_path={DB_SCHEMA},public"
+}
 
 # --- 🧑‍💻 Usuarios ---
 AUTH_USER_MODEL = "users.Usuario"
