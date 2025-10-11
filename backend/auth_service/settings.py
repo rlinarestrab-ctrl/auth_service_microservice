@@ -86,7 +86,7 @@ AUTH_USER_MODEL = "users.Usuario"
 # --- 🌐 CORS ---
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "https://tu-frontend.vercel.app",  # ✅ cambiar cuando deployes
+    "https://turutaeducativa.vercel.app",  # ✅ cambiar cuando deployes
 ]
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization", "x-requested-with", "x-user-id", "user-agent",
