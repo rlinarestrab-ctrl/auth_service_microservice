@@ -26,7 +26,6 @@ class GoogleLoginView(APIView):
         )
         return JsonResponse({"auth_url": google_auth_url})
 
-
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
 
@@ -35,7 +34,11 @@ class GoogleCallbackView(APIView):
         if not code:
             return Response({"error": "Missing code"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1️⃣ Intercambiar el código por tokens de Google
+        # Log temporal para depurar
+        print("🔹 Using redirect URI:", settings.GOOGLE_REDIRECT_URI)
+        print("🔹 Client ID:", settings.GOOGLE_CLIENT_ID[:10], "...")
+
+        # Intercambio del código por tokens de Google
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
@@ -44,19 +47,28 @@ class GoogleCallbackView(APIView):
             "redirect_uri": settings.GOOGLE_REDIRECT_URI,
             "grant_type": "authorization_code",
         }
-        r = requests.post(token_url, data=data)
-        if r.status_code != 200:
-            return Response({"error": "Token exchange failed"}, status=r.status_code)
+        try:
+            r = requests.post(token_url, data=data)
+            if r.status_code != 200:
+                print("❌ Token exchange error:", r.text)
+                return Response(
+                    {"error": "Token exchange failed", "details": r.text},
+                    status=r.status_code,
+                )
+        except requests.exceptions.RequestException as e:
+            print("❌ Request exception:", e)
+            return Response({"error": "Request exception", "details": str(e)}, status=500)
 
         tokens = r.json()
         google_access_token = tokens.get("access_token")
         google_refresh_token = tokens.get("refresh_token")
 
-        # 2️⃣ Obtener la información del usuario desde Google
+        # Obtener info del usuario
         userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
         headers = {"Authorization": f"Bearer {google_access_token}"}
         r = requests.get(userinfo_url, headers=headers)
         if r.status_code != 200:
+            print("❌ User info error:", r.text)
             return Response({"error": "Failed to get user info"}, status=r.status_code)
 
         userinfo = r.json()
@@ -64,17 +76,11 @@ class GoogleCallbackView(APIView):
         nombre = userinfo.get("given_name", "")
         apellido = userinfo.get("family_name", "")
 
-        # 3️⃣ Crear o recuperar el usuario en tu base de datos
         user, created = Usuario.objects.get_or_create(
             email=email,
-            defaults={
-                "nombre": nombre,
-                "apellido": apellido,
-                "rol": "estudiante",
-            },
+            defaults={"nombre": nombre, "apellido": apellido, "rol": "estudiante"},
         )
 
-        # 4️⃣ Generar JWT personalizados con claims adicionales
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
@@ -85,7 +91,6 @@ class GoogleCallbackView(APIView):
         access["id"] = str(user.id)
         access["activo"] = user.activo
 
-        # 5️⃣ Redirigir al frontend con todos los tokens
         frontend_url = f"{settings.FRONTEND_URL.rstrip('/')}/google/callback"
         params = {
             "access": str(access),
@@ -94,9 +99,9 @@ class GoogleCallbackView(APIView):
             "nombre": user.nombre,
             "apellido": user.apellido,
             "rol": user.rol,
-            # 🔹 añadimos los tokens reales de Google
             "google_access_token": google_access_token,
             "google_refresh_token": google_refresh_token,
         }
         redirect_url = f"{frontend_url}?{urlencode(params)}"
+        print("✅ Redirecting to frontend:", redirect_url)
         return redirect(redirect_url)
