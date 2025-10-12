@@ -9,7 +9,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Cargar .env si existe localmente
-load_dotenv(BASE_DIR.parent / ".env")
+load_dotenv(BASE_DIR.parent / ".env.dev")
 
 # --- ⚙️ Configuración base ---
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret")
