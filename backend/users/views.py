@@ -59,42 +59,73 @@ class LoginJWTView(TokenObtainPairView):
 # -----------------------------
 # ⚙️ (Opcional) Login manual simple
 # -----------------------------
+
 class LoginView(APIView):
     """
-    Vista alternativa de login clásico (email + password),
-    mantiene compatibilidad si ya usas esta ruta en el frontend.
+    Login clásico (email + password)
+    ✅ Verifica si el usuario está activo
+    ✅ Retorna tokens con rol y campos personalizados
     """
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
 
         if not email or not password:
-            return Response({"detail": "Faltan credenciales"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Faltan credenciales"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         user = authenticate(request, email=email, password=password)
         if not user:
-            return Response({"detail": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"detail": "Credenciales inválidas"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
-        # Generar tokens
+        # 🚫 Bloquear acceso a usuarios inactivos
+        if not getattr(user, "activo", True):
+            return Response(
+                {
+                    "detail": "Tu cuenta está inactiva. "
+                              "Un administrador debe activarla antes de poder iniciar sesión."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # ✅ Usuario activo → generar tokens
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
 
-        # ✅ Agregar información personalizada al token (igual que en CustomTokenObtainPairSerializer)
+        # Agregar campos personalizados al token (para el frontend)
         access_token["email"] = user.email
-        access_token["nombre"] = user.nombre
-        access_token["apellido"] = user.apellido
-        access_token["rol"] = user.rol
+        access_token["nombre"] = getattr(user, "nombre", "")
+        access_token["apellido"] = getattr(user, "apellido", "")
+        access_token["rol"] = getattr(user, "rol", "estudiante")
+        access_token["activo"] = getattr(user, "activo", True)
 
-        return Response({
-            "tokens": {
-                "access": str(access_token),
-                "refresh": str(refresh),
+        # También agregar al refresh si quieres mantener consistencia
+        refresh["rol"] = getattr(user, "rol", "estudiante")
+        refresh["email"] = user.email
+        refresh["nombre"] = getattr(user, "nombre", "")
+        refresh["apellido"] = getattr(user, "apellido", "")
+        refresh["activo"] = getattr(user, "activo", True)
+
+        # Respuesta completa
+        return Response(
+            {
+                "tokens": {
+                    "access": str(access_token),
+                    "refresh": str(refresh),
+                },
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "nombre": getattr(user, "nombre", ""),
+                    "apellido": getattr(user, "apellido", ""),
+                    "rol": getattr(user, "rol", "estudiante"),
+                    "activo": getattr(user, "activo", True),
+                },
             },
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "nombre": user.nombre,
-                "apellido": user.apellido,
-                "rol": user.rol,
-            }
-        }, status=status.HTTP_200_OK)
+            status=status.HTTP_200_OK,
+        )

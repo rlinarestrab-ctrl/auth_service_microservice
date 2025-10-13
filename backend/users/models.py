@@ -29,21 +29,32 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     telefono = models.CharField(max_length=20, null=True, blank=True)
     rol = models.CharField(
         max_length=20,
-        choices=[("admin", "Administrador"), ("estudiante", "Estudiante"), ("orientador", "Orientador")],
+        choices=[
+            ("admin", "Administrador"),
+            ("estudiante", "Estudiante"),
+            ("orientador", "Orientador"),
+            ("institucion", "Institución"),
+        ],
         default="estudiante",
     )
-    fecha_registro = models.DateTimeField(auto_now_add=True)
-    ultimo_login = models.DateTimeField(null=True, blank=True)
-    activo = models.BooleanField(default=True)
 
-    # Requeridos por Admin
+    # 📁 Nuevo: documentación
+    tipo_documentacion = models.CharField(max_length=50, null=True, blank=True)
+    documentacion = models.FileField(upload_to="documentos_usuarios/", null=True, blank=True)
+
+    # 🔑 Validaciones y control
+    email_validado = models.BooleanField(default=False)
+    activo = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    ultimo_login = models.DateTimeField(null=True, blank=True)
 
     objects = UsuarioManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []  # más simple para createsuperuser
+    REQUIRED_FIELDS = []
 
     class Meta:
         db_table = "usuarios"
