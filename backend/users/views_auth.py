@@ -74,7 +74,7 @@ class LoginView(generics.GenericAPIView):
             t["email"] = user.email
             t["nombre"] = getattr(user, "nombre", "")
             t["apellido"] = getattr(user, "apellido", "")
-            t["rol"] = getattr(user, "rol", "estudiante")
+            t["rol"] = getattr(user, "rol", "")
             t["activo"] = getattr(user, "activo", True)
 
         # 🧩 Respuesta para frontend
@@ -89,7 +89,7 @@ class LoginView(generics.GenericAPIView):
                     "email": user.email,
                     "nombre": getattr(user, "nombre", ""),
                     "apellido": getattr(user, "apellido", ""),
-                    "rol": getattr(user, "rol", "estudiante"),
+                    "rol": getattr(user, "rol", ""),
                     "activo": getattr(user, "activo", True),
                 },
             },
